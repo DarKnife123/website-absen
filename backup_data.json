@@ -1,0 +1,146 @@
+{
+  "users": [
+    {
+      "id": "cmnf92fxq0000y0veyermedjm",
+      "name": "Rakha Oktav Farras Naufal",
+      "email": "rakhaoktav@gmail.com",
+      "emailVerified": null,
+      "image": null,
+      "password": "$2b$10$bmBZNbO7wcIiULCR6hqo/eQDesNL.ye3dq0IQ8ExQqFhFxYuWdgSu",
+      "role": "User"
+    },
+    {
+      "id": "cmnpbv4hg0001bcve93z7xkpa",
+      "name": "Admin",
+      "email": "admin@gmail.com",
+      "emailVerified": null,
+      "image": null,
+      "password": "$2b$10$StzO3wa9O7pIC/sX1aJfIO3MrqoFIHthA.GX1aFolM6luo1MhbKPq",
+      "role": "Admin"
+    },
+    {
+      "id": "cmnpgtxqe0000m4veyxuoqxf3",
+      "name": "Faris Hawari",
+      "email": "farishawari@gmail.com",
+      "emailVerified": null,
+      "image": null,
+      "password": "$2b$10$oPUlo8W20e038iKPCxZAdeV/fSsOc/ucCfr53gEOUjJ1oJlGFKfEm",
+      "role": "User"
+    },
+    {
+      "id": "cmnph7oo00003m4vewzce9bmn",
+      "name": "Novan Harvian",
+      "email": "novanharvian@gmail.com",
+      "emailVerified": null,
+      "image": null,
+      "password": "$2b$10$KOTZX2Ed/1LKrtw0J3myRehiLOJ1zx2JB05NlRgXtUxw./4J/3tWm",
+      "role": "User"
+    },
+    {
+      "id": "cmnph8wlj0005m4vefz8iqund",
+      "name": "Rio Malik Rozan",
+      "email": "riorioin@gmail.com",
+      "emailVerified": null,
+      "image": null,
+      "password": "$2b$10$PNnqkLv1C2HuuolAOmMuk.ARL/jaI2ZrGqciC/obIeVJgRJaF9pvi",
+      "role": "User"
+    },
+    {
+      "id": "cmnphl72f0009m4veep678ym6",
+      "name": "Muhammad Adam Fauzul Amni",
+      "email": "adam@gmail.com",
+      "emailVerified": null,
+      "image": null,
+      "password": "$2b$10$8vCreT/AKvNiJaan5FVEk.gb7D/YdohACKnMpucFZBjSxEZrAeDt6",
+      "role": "User"
+    }
+  ],
+  "accounts": [],
+  "sessions": [],
+  "kelas": [
+    {
+      "id": "xii-sija-b",
+      "nama": "XII SIJA B"
+    },
+    {
+      "id": "xii-sija-a",
+      "nama": "XII SIJA A"
+    }
+  ],
+  "siswa": [
+    {
+      "id": "cmnpbv4j90002bcveg0si7qgj",
+      "nis": "ae6d530f",
+      "userId": "cmnpbv4hg0001bcve93z7xkpa",
+      "kelasId": "xii-sija-b"
+    },
+    {
+      "id": "cmnpgtxrq0001m4ve03mzn7yw",
+      "nis": "231117099",
+      "userId": "cmnpgtxqe0000m4veyxuoqxf3",
+      "kelasId": "xii-sija-b"
+    },
+    {
+      "id": "cmnf92g7s0001y0veipo6okeg",
+      "nis": "231117117",
+      "userId": "cmnf92fxq0000y0veyermedjm",
+      "kelasId": "xii-sija-b"
+    },
+    {
+      "id": "cmnph7oqk0004m4veep2vezjj",
+      "nis": "231117115",
+      "userId": "cmnph7oo00003m4vewzce9bmn",
+      "kelasId": "xii-sija-b"
+    },
+    {
+      "id": "cmnph8wnu0006m4vegb2x2b8s",
+      "nis": "231117119",
+      "userId": "cmnph8wlj0005m4vefz8iqund",
+      "kelasId": "xii-sija-b"
+    },
+    {
+      "id": "cmnphl74g000am4ve3xtwpn2s",
+      "nis": "23117105",
+      "userId": "cmnphl72f0009m4veep678ym6",
+      "kelasId": "xii-sija-b"
+    }
+  ],
+  "absensi": [
+    {
+      "id": "cmnpbfhk00000bcvewzgsxem4",
+      "tanggal": "2026-04-08T00:34:16.587Z",
+      "status": "hadir",
+      "siswaId": "cmnf92g7s0001y0veipo6okeg",
+      "keterangan": null,
+      "filePath": null,
+      "createdAt": "2026-04-08T00:34:16.608Z"
+    },
+    {
+      "id": "cmnpgwwgf0002m4vee4i6b641",
+      "tanggal": "2026-04-08T03:07:47.145Z",
+      "status": "izin",
+      "siswaId": "cmnpgtxrq0001m4ve03mzn7yw",
+      "keterangan": "Males sekolah ah, tugas numpuk.",
+      "filePath": "/uploads/1775617666290-198756850-10.png",
+      "createdAt": "2026-04-08T03:07:47.151Z"
+    },
+    {
+      "id": "cmnph9c5v0007m4ve6a1a7jhp",
+      "tanggal": "2026-04-08T03:17:27.377Z",
+      "status": "hadir",
+      "siswaId": "cmnph7oqk0004m4veep2vezjj",
+      "keterangan": null,
+      "filePath": null,
+      "createdAt": "2026-04-08T03:17:27.379Z"
+    },
+    {
+      "id": "cmnpha17d0008m4vemei72jx2",
+      "tanggal": "2026-04-08T03:17:59.832Z",
+      "status": "sakit",
+      "siswaId": "cmnph8wnu0006m4vegb2x2b8s",
+      "keterangan": "Sakit hati bu",
+      "filePath": "/uploads/1775618279225-411699347-11.png",
+      "createdAt": "2026-04-08T03:17:59.833Z"
+    }
+  ]
+}
