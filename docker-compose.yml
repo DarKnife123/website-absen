@@ -1,4 +1,20 @@
 services:
+  mongo:
+    image: mongo:6
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    ports:
+      - "5110:27017"
+    volumes:
+      - mongo_data_v2:/data/db
+    restart: unless-stopped
+
+  mongo-init:
+    image: mongo:6
+    restart: on-failure
+    depends_on:
+      - mongo
+    entrypoint: ["mongosh", "--host", "mongo", "--eval", "try{rs.status()}catch(e){rs.initiate({_id:'rs0',members:[{_id:0,host:'mongo:27017'}]})}"]
+
   app:
     build:
       context: .
@@ -12,33 +28,9 @@ services:
     volumes:
       - uploads_data:/app/public/uploads
     depends_on:
-      mongo-init:
-        condition: service_completed_successfully
+      - mongo
     restart: unless-stopped
-
-  mongo:
-    image: mongo:6
-    command: ["--replSet", "rs0", "--bind_ip_all"]
-    ports:
-      - "5110:27017"
-    volumes:
-      - mongo_data:/data/db
-    healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
-      interval: 5s
-      timeout: 5s
-      retries: 30
-      start_period: 20s
-    restart: unless-stopped
-
-  mongo-init:
-    image: mongo:6
-    depends_on:
-      mongo:
-        condition: service_healthy
-    restart: "no"
-    entrypoint: ["mongosh", "--host", "mongo", "--eval", "try{rs.status()}catch(e){rs.initiate({_id:'rs0',members:[{_id:0,host:'mongo:27017'}]})}"]
 
 volumes:
-  mongo_data:
+  mongo_data_v2:
   uploads_data:
