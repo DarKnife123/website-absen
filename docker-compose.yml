@@ -31,28 +31,7 @@ services:
       - mongo
     volumes:
       - ./scripts:/scripts
-    command: >
-      bash -c "
-      echo 'Waiting for MongoDB to start...';
-      until mongosh --host mongo:27017 --eval 'print(\"ready\")'; do
-        sleep 2;
-      done;
-      echo 'MongoDB is up. Checking replica set...';
-      mongosh --host mongo:27017 --eval '
-      try {
-        rs.status();
-        print(\"Replica set already initialized\");
-      } catch (err) {
-        if (err.codeName === \"NotYetInitialized\") {
-          rs.initiate({
-            _id: \"rs0\",
-            members: [{ _id: 0, host: \"mongo:27017\" }]
-          });
-          print(\"Replica set initialized\");
-        } else {
-          print(\"Error checking status: \" + err.message);
-        }
-      }'"
+    command: ["bash", "/scripts/setup.sh"]
 
 volumes:
   mongo_data:
