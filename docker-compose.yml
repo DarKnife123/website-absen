@@ -7,7 +7,7 @@ services:
     ports:
       - "5110:27017"
     volumes:
-      - mongo_data_v4:/data/db
+      - mongo_data_v5:/data/db
     networks:
       - app-net
     restart: unless-stopped
@@ -47,5 +47,5 @@ networks:
     driver: bridge
 
 volumes:
-  mongo_data_v4:
+  mongo_data_v5:
   uploads_data:
