@@ -34,7 +34,10 @@ services:
     command: >
       bash -c "
       echo 'Waiting for MongoDB to start...';
-      sleep 5;
+      until mongosh --host mongo:27017 --eval 'print(\"ready\")'; do
+        sleep 2;
+      done;
+      echo 'MongoDB is up. Checking replica set...';
       mongosh --host mongo:27017 --eval '
       try {
         rs.status();
