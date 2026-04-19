@@ -29,20 +29,20 @@ export default async function StudentAttendancePage() {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const sudahAbsen = siswa.absensi.some(
-    (a) => {
+    (a: any) => {
       const tanggal = new Date(a.tanggal)
       tanggal.setHours(0, 0, 0, 0)
       return tanggal.getTime() === today.getTime()
     }
   )
 
-  const todayRecord = siswa.absensi.find((a) => {
+  const todayRecord = siswa.absensi.find((a: any) => {
     const tanggal = new Date(a.tanggal)
     tanggal.setHours(0, 0, 0, 0)
     return tanggal.getTime() === today.getTime()
   })
 
-  const history = siswa.absensi.map((a) => ({
+  const history = siswa.absensi.map((a: any) => ({
     id: a.id,
     tanggal: a.tanggal.toISOString(),
     status: a.status,

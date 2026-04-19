@@ -19,7 +19,7 @@ export default async function AdminUsersPage() {
     orderBy: { name: "asc" },
   })
 
-  const serializedUsers = users.map((u) => ({
+  const serializedUsers = users.map((u: any) => ({
     id: u.id,
     name: u.name || "-",
     email: u.email || "-",

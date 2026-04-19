@@ -36,14 +36,14 @@ export default async function StudentDashboardPage() {
   const akhirBulan = endOfMonth(now)
 
   const absensiBulanIni = siswa.absensi.filter(
-    (a) => a.tanggal >= awalBulan && a.tanggal <= akhirBulan
+    (a: any) => a.tanggal >= awalBulan && a.tanggal <= akhirBulan
   )
 
   const stats = {
-    hadir: absensiBulanIni.filter((a) => a.status === "hadir").length,
-    izin: absensiBulanIni.filter((a) => a.status === "izin").length,
-    sakit: absensiBulanIni.filter((a) => a.status === "sakit").length,
-    alpha: absensiBulanIni.filter((a) => a.status === "alpha").length,
+    hadir: absensiBulanIni.filter((a: any) => a.status === "hadir").length,
+    izin: absensiBulanIni.filter((a: any) => a.status === "izin").length,
+    sakit: absensiBulanIni.filter((a: any) => a.status === "sakit").length,
+    alpha: absensiBulanIni.filter((a: any) => a.status === "alpha").length,
   }
 
   const streak = await getStreakData(siswa.id)

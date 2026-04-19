@@ -23,7 +23,7 @@ export default async function AdminAttendancePage() {
 
   const classes = await prisma.kelas.findMany({ orderBy: { nama: "asc" } })
 
-  const serialized = attendance.map((a) => ({
+  const serialized = attendance.map((a: any) => ({
     id: a.id,
     tanggal: a.tanggal.toISOString(),
     status: a.status,
@@ -37,7 +37,7 @@ export default async function AdminAttendancePage() {
   return (
     <AttendanceClient
       attendance={serialized}
-      classes={classes.map((c) => ({ id: c.id, nama: c.nama }))}
+      classes={classes.map((c: any) => ({ id: c.id, nama: c.nama }))}
     />
   )
 }

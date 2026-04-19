@@ -256,10 +256,10 @@ export async function getAttendanceChartData() {
     grouped[key] = { hadir: 0, izin: 0, sakit: 0, alpha: 0 };
   }
 
-  attendance.forEach((a) => {
+  attendance.forEach((a: any) => {
     const key = `${monthNames[a.tanggal.getMonth()]} ${a.tanggal.getFullYear()}`;
     if (grouped[key]) {
-      grouped[key][a.status]++;
+      (grouped[key] as any)[a.status]++;
     }
   });
 
@@ -285,7 +285,7 @@ export async function getStreakData(siswaId: string) {
 
   // Build a set of dates when student was present
   const presentDates = new Set<string>();
-  absensi.forEach((a) => {
+  absensi.forEach((a: any) => {
     if (a.status === "hadir") {
       const d = new Date(a.tanggal);
       d.setHours(0, 0, 0, 0);
@@ -295,7 +295,7 @@ export async function getStreakData(siswaId: string) {
 
   // Build set of all attendance dates (any status)
   const allDates = new Set<string>();
-  absensi.forEach((a) => {
+  absensi.forEach((a: any) => {
     const d = new Date(a.tanggal);
     d.setHours(0, 0, 0, 0);
     allDates.add(d.toISOString());
