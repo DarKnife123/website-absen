@@ -212,7 +212,7 @@ export async function updateUser(userId: string, formData: FormData) {
   try {
     await prisma.user.update({
       where: { id: userId },
-      data: { name, email, role },
+      data: { name, email, role: role as any },
     });
 
     revalidatePath("/dashboard/admin/users");

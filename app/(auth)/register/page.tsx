@@ -1,6 +1,8 @@
 import FormRegister from "@/components/auth/form-register";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = 'force-dynamic';
+
 const Register = async () => {
     // Fetch classes for the dropdown
     const classes = await prisma.kelas.findMany({
