@@ -1,11 +1,13 @@
 services:
-  mongo:
+  attendance-db:
     image: mongo:6
+    container_name: attendance-db
+    hostname: attendance-db
     command: ["--replSet", "rs0", "--bind_ip_all"]
     ports:
       - "5110:27017"
     volumes:
-      - mongo_data_v2:/data/db
+      - mongo_data_v4:/data/db
     networks:
       - app-net
     restart: unless-stopped
@@ -14,10 +16,10 @@ services:
     image: mongo:6
     restart: on-failure
     depends_on:
-      - mongo
+      - attendance-db
     networks:
       - app-net
-    entrypoint: ["mongosh", "--host", "mongo", "--eval", "try{rs.status()}catch(e){rs.initiate({_id:'rs0',members:[{_id:0,host:'mongo:27017'}]})}"]
+    entrypoint: ["mongosh", "--host", "attendance-db", "--eval", "try{rs.status()}catch(e){rs.initiate({_id:'rs0',members:[{_id:0,host:'attendance-db:27017'}]})}"]
 
   app:
     build:
@@ -26,14 +28,16 @@ services:
     ports:
       - "5010:5010"
     environment:
-      - DATABASE_URL=mongodb://mongo:27017/Presensi?replicaSet=rs0&directConnection=true
+      - DATABASE_URL=mongodb://attendance-db:27017/Presensi?replicaSet=rs0&directConnection=true
       - AUTH_SECRET=${AUTH_SECRET:-nrehivnajrnauirgnuoaeaovnraviyerbvain}
       - AUTH_TRUST_HOST=true
       - NEXTAUTH_URL=${NEXTAUTH_URL:-http://100.69.98.9:5010}
     volumes:
       - uploads_data:/app/public/uploads
     depends_on:
-      - mongo
+      - attendance-db
+    links:
+      - attendance-db:attendance-db
     networks:
       - app-net
     restart: unless-stopped
@@ -43,5 +47,5 @@ networks:
     driver: bridge
 
 volumes:
-  mongo_data_v2:
+  mongo_data_v4:
   uploads_data:
