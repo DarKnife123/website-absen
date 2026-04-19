@@ -24,7 +24,8 @@ services:
     environment:
       - DATABASE_URL=mongodb://mongo:27017/Presensi?replicaSet=rs0&directConnection=true
       - AUTH_SECRET=${AUTH_SECRET:-nrehivnajrnauirgnuoaeaovnraviyerbvain}
-      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:5010}
+      - AUTH_TRUST_HOST=true
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://100.69.98.9:5010}
     volumes:
       - uploads_data:/app/public/uploads
     depends_on:
