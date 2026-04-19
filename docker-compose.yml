@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=mongodb://mongo:27017/Presensi?replicaSet=rs0
+      - AUTH_SECRET=${AUTH_SECRET:-nrehivnajrnauirgnuoaeaovnraviyerbvain}
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
+    volumes:
+      - uploads_data:/app/public/uploads
+    depends_on:
+      mongo_setup:
+        condition: service_completed_successfully
+
+  mongo:
+    image: mongo:6
+    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  mongo_setup:
+    image: mongo:6
+    depends_on:
+      - mongo
+    volumes:
+      - ./scripts:/scripts
+    command: >
+      bash -c "
+      echo 'Waiting for MongoDB to start...';
+      sleep 5;
+      mongosh --host mongo:27017 --eval '
+      try {
+        rs.status();
+        print(\"Replica set already initialized\");
+      } catch (err) {
+        if (err.codeName === \"NotYetInitialized\") {
+          rs.initiate({
+            _id: \"rs0\",
+            members: [{ _id: 0, host: \"mongo:27017\" }]
+          });
+          print(\"Replica set initialized\");
+        } else {
+          print(\"Error checking status: \" + err.message);
+        }
+      }'"
+
+volumes:
+  mongo_data:
+  uploads_data:
