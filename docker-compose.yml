@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   app:
     build:
@@ -8,14 +6,15 @@ services:
     ports:
       - "5010:5010"
     environment:
-      - DATABASE_URL=mongodb://mongo:27017/Presensi?replicaSet=rs0
+      - DATABASE_URL=mongodb://mongo:27017/Presensi?replicaSet=rs0&directConnection=true
       - AUTH_SECRET=${AUTH_SECRET:-nrehivnajrnauirgnuoaeaovnraviyerbvain}
       - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:5010}
     volumes:
       - uploads_data:/app/public/uploads
     depends_on:
-      mongo_setup:
-        condition: service_completed_successfully
+      mongo:
+        condition: service_healthy
+    restart: unless-stopped
 
   mongo:
     image: mongo:6
@@ -24,44 +23,26 @@ services:
       - "5110:27017"
     volumes:
       - mongo_data:/data/db
-
-  mongo_setup:
-    image: mongo:6
-    depends_on:
-      - mongo
-    command:
-      - bash
-      - -c
-      - |
-        echo "Waiting for MongoDB to start..."
-        until mongosh --host mongo:27017 --eval 'print("ready")'; do
-          sleep 2
-        done
-        
-        echo "MongoDB is up. Checking replica set..."
-        mongosh --host mongo:27017 --eval '
+      - mongo_init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: >
+        mongosh --quiet --eval "
         try {
-          var status = rs.status();
-          if (status.ok === 1) {
-            print("Replica set is fully initialized and operational.");
-          } else {
-            print("Replica set status anomaly: ", JSON.stringify(status));
+          rs.status();
+        } catch(e) {
+          if (e.codeName === 'NotYetInitialized') {
+            rs.initiate({_id:'rs0', members:[{_id:0, host:'localhost:27017'}]});
           }
-        } catch (err) {
-          if (err.codeName === "NotYetInitialized") {
-            print("Initiating replica set rs0...");
-            var res = rs.initiate({
-              _id: "rs0",
-              members: [{ _id: 0, host: "mongo:27017" }]
-            });
-            print("Initiate response: " + JSON.stringify(res));
-          } else {
-            print("Error checking status: " + err.message);
-            // If it failed due to some other error, sleep to avoid instant exit
-            sleep(2000);
-          }
-        }'
+        }
+        db.adminCommand('ping').ok
+        "
+      interval: 5s
+      timeout: 10s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
 
 volumes:
   mongo_data:
+  mongo_init:
   uploads_data:
