@@ -6,6 +6,8 @@ services:
       - "5110:27017"
     volumes:
       - mongo_data_v2:/data/db
+    networks:
+      - app-net
     restart: unless-stopped
 
   mongo-init:
@@ -13,6 +15,8 @@ services:
     restart: on-failure
     depends_on:
       - mongo
+    networks:
+      - app-net
     entrypoint: ["mongosh", "--host", "mongo", "--eval", "try{rs.status()}catch(e){rs.initiate({_id:'rs0',members:[{_id:0,host:'mongo:27017'}]})}"]
 
   app:
@@ -30,7 +34,13 @@ services:
       - uploads_data:/app/public/uploads
     depends_on:
       - mongo
+    networks:
+      - app-net
     restart: unless-stopped
+
+networks:
+  app-net:
+    driver: bridge
 
 volumes:
   mongo_data_v2:
