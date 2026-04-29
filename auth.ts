@@ -1,12 +1,13 @@
 import NextAuth from "next-auth"
-// import { PrismaAdapter } from "@auth/prisma-adapter"
-import { prisma } from "@/lib/prisma"
+import { MongoDBAdapter } from "@auth/mongodb-adapter"
+import clientPromise from "@/lib/mongodb"
+import { getDb } from "@/lib/db"
 import Credentials from "next-auth/providers/credentials"
 import { SignInSchema } from "./lib/zod"
 import { compareSync } from "bcrypt-ts"
  
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  // adapter: PrismaAdapter(prisma),
+  adapter: MongoDBAdapter(clientPromise) as any,
   session: {strategy: "jwt"},
   providers: [
     Credentials({
@@ -23,18 +24,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const { email, password } = validateFields.data;
 
-        const user = await prisma.user.findUnique({
-          where: { email }
-        });
+        const db = await getDb();
+        const user = await db.collection("users").findOne({ email });
 
         if (!user || !user.password) {
           throw new Error("Invalid email or password");
         }
 
-        const passwordMatch = compareSync(password, user.password);
+        const passwordMatch = compareSync(password, user.password as string);
         if (!passwordMatch) return null;
 
-        return user;
+        return {
+          id: user._id.toString(),
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        };
       }
     })
   ],

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getDb } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -14,34 +14,41 @@ export async function GET() {
     },
   };
 
-  // Test 1: Basic connection
   try {
-    await prisma.$runCommandRaw({ ping: 1 });
-    results.ping = "OK";
-  } catch (e: any) {
-    results.ping = "FAILED: " + e.message;
-  }
+    const db = await getDb();
 
-  // Test 2: Check replica set
-  try {
-    const rsStatus = await prisma.$runCommandRaw({ replSetGetStatus: 1 });
-    results.replicaSet = "OK";
-    results.rsDetails = { set: (rsStatus as any).set, ok: (rsStatus as any).ok };
-  } catch (e: any) {
-    results.replicaSet = "FAILED: " + e.message;
-  }
+    // Test 1: Basic connection
+    try {
+      await db.command({ ping: 1 });
+      results.ping = "OK";
+    } catch (e: any) {
+      results.ping = "FAILED: " + e.message;
+    }
 
-  // Test 3: Count collections
-  try {
-    const [users, kelas, siswa, absensi] = await Promise.all([
-      prisma.user.count(),
-      prisma.kelas.count(),
-      prisma.siswa.count(),
-      prisma.absensi.count(),
-    ]);
-    results.data = { users, kelas, siswa, absensi };
-  } catch (e: any) {
-    results.data = "FAILED: " + e.message;
+    // Test 2: Check replica set
+    try {
+      const rsStatus = await db.command({ replSetGetStatus: 1 });
+      results.replicaSet = "OK";
+      results.rsDetails = { set: (rsStatus as any).set, ok: (rsStatus as any).ok };
+    } catch (e: any) {
+      results.replicaSet = "FAILED: " + e.message;
+    }
+
+    // Test 3: Count collections
+    try {
+      const [users, kelas, siswa, absensi] = await Promise.all([
+        db.collection("users").countDocuments(),
+        db.collection("kelas").countDocuments(),
+        db.collection("siswa").countDocuments(),
+        db.collection("absensi").countDocuments(),
+      ]);
+      results.data = { users, kelas, siswa, absensi };
+    } catch (e: any) {
+      results.data = "FAILED: " + e.message;
+    }
+
+  } catch (err: any) {
+    results.error = "Connection Failed: " + err.message;
   }
 
   return NextResponse.json(results, { status: 200 });

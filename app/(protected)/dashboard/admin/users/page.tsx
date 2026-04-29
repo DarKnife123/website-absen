@@ -1,6 +1,6 @@
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
-import { prisma } from "@/lib/prisma"
+import { getDb } from "@/lib/db"
 import UsersClient from "./client"
 
 export default async function AdminUsersPage() {
@@ -8,19 +8,17 @@ export default async function AdminUsersPage() {
   if (!session) redirect("/login")
   if (session.user.role !== "Admin") redirect("/dashboard")
 
-  const users = await prisma.user.findMany({
-    include: {
-      siswa: {
-        include: {
-          kelas: true,
-        },
-      },
-    },
-    orderBy: { name: "asc" },
-  })
+  const db = await getDb()
+  const users = await db.collection("users").aggregate([
+    { $sort: { name: 1 } },
+    { $lookup: { from: "siswa", localField: "_id", foreignField: "userId", as: "siswa" } },
+    { $unwind: { path: "$siswa", preserveNullAndEmptyArrays: true } },
+    { $lookup: { from: "kelas", localField: "siswa.kelasId", foreignField: "_id", as: "siswa.kelas" } },
+    { $unwind: { path: "$siswa.kelas", preserveNullAndEmptyArrays: true } },
+  ]).toArray()
 
   const serializedUsers = users.map((u: any) => ({
-    id: u.id,
+    id: u._id.toString(),
     name: u.name || "-",
     email: u.email || "-",
     role: u.role,

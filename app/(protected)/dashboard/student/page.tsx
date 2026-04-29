@@ -1,6 +1,7 @@
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
-import { prisma } from "@/lib/prisma"
+import { getDb } from "@/lib/db"
+import { ObjectId } from "mongodb"
 import { getStreakData } from "@/lib/actions"
 import { startOfMonth, endOfMonth } from "date-fns"
 import StudentHomeClient from "./client"
@@ -10,16 +11,20 @@ export default async function StudentDashboardPage() {
   if (!session) redirect("/login")
   if (session.user.role !== "User") redirect("/dashboard")
 
-  const siswa = await prisma.siswa.findUnique({
-    where: { userId: session.user.id },
-    include: {
-      kelas: true,
-      absensi: {
-        orderBy: { tanggal: "desc" },
-      },
-      user: true,
-    },
-  })
+  const db = await getDb()
+  let userObjId;
+  try { userObjId = new ObjectId(session.user.id); } catch(e) { userObjId = session.user.id; }
+
+  const siswaArr = await db.collection("siswa").aggregate([
+    { $match: { $or: [{ userId: userObjId }, { userId: session.user.id as any }] } },
+    { $lookup: { from: "users", localField: "userId", foreignField: "_id", as: "user" } },
+    { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
+    { $lookup: { from: "kelas", localField: "kelasId", foreignField: "_id", as: "kelas" } },
+    { $unwind: { path: "$kelas", preserveNullAndEmptyArrays: true } },
+    { $lookup: { from: "absensi", localField: "_id", foreignField: "siswaId", pipeline: [ { $sort: { tanggal: -1 } } ], as: "absensi" } },
+  ]).toArray();
+
+  const siswa = siswaArr[0];
 
   if (!siswa) {
     return (
@@ -51,11 +56,11 @@ export default async function StudentDashboardPage() {
   return (
     <StudentHomeClient
       user={{
-        name: siswa.user.name || "-",
-        email: siswa.user.email || "-",
+        name: siswa.user?.name || "-",
+        email: siswa.user?.email || "-",
         nis: siswa.nis,
-        kelas: siswa.kelas.nama,
-        image: siswa.user.image,
+        kelas: siswa.kelas?.nama || "-",
+        image: siswa.user?.image,
       }}
       stats={stats}
       streak={streak}

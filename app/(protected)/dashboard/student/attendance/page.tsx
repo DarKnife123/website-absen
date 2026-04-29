@@ -1,6 +1,7 @@
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
-import { prisma } from "@/lib/prisma"
+import { getDb } from "@/lib/db"
+import { ObjectId } from "mongodb"
 import AttendanceClient from "./client"
 
 export default async function StudentAttendancePage() {
@@ -8,15 +9,16 @@ export default async function StudentAttendancePage() {
   if (!session) redirect("/login")
   if (session.user.role !== "User") redirect("/dashboard")
 
-  const siswa = await prisma.siswa.findUnique({
-    where: { userId: session.user.id },
-    include: {
-      absensi: {
-        orderBy: { tanggal: "desc" },
-        take: 30,
-      },
-    },
-  })
+  const db = await getDb()
+  let userObjId;
+  try { userObjId = new ObjectId(session.user.id); } catch(e) { userObjId = session.user.id; }
+
+  const siswaArr = await db.collection("siswa").aggregate([
+    { $match: { $or: [{ userId: userObjId }, { userId: session.user.id as any }] } },
+    { $lookup: { from: "absensi", localField: "_id", foreignField: "siswaId", pipeline: [ { $sort: { tanggal: -1 } }, { $limit: 30 } ], as: "absensi" } },
+  ]).toArray();
+
+  const siswa = siswaArr[0];
 
   if (!siswa) {
     return (
@@ -43,7 +45,7 @@ export default async function StudentAttendancePage() {
   })
 
   const history = siswa.absensi.map((a: any) => ({
-    id: a.id,
+    id: a._id?.toString(),
     tanggal: a.tanggal.toISOString(),
     status: a.status,
     keterangan: a.keterangan,

@@ -1,6 +1,7 @@
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
-import { prisma } from "@/lib/prisma"
+import { getDb } from "@/lib/db"
+import { ObjectId } from "mongodb"
 import EditUserClient from "./client"
 
 type Props = {
@@ -14,8 +15,12 @@ export default async function EditUserPage({ params }: Props) {
 
   const { id } = await params
 
-  const user = await prisma.user.findUnique({
-    where: { id },
+  const db = await getDb()
+  let userObjId;
+  try { userObjId = new ObjectId(id); } catch(e) { userObjId = id; }
+  
+  const user = await db.collection("users").findOne({
+    $or: [{_id: userObjId}, {_id: id as any}]
   })
 
   if (!user) {
@@ -25,7 +30,7 @@ export default async function EditUserPage({ params }: Props) {
   return (
     <EditUserClient
       user={{
-        id: user.id,
+        id: user._id.toString(),
         name: user.name || "",
         email: user.email || "",
         role: user.role,

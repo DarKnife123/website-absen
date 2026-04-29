@@ -2,7 +2,8 @@
 
 import { RegisterSchema, SignInSchema } from "@/lib/zod";
 import { hashSync } from "bcrypt-ts";
-import { prisma } from "@/lib/prisma";
+import { getDb } from "@/lib/db";
+import { ObjectId } from "mongodb";
 import { redirect } from "next/navigation";
 import { signIn, auth } from "@/auth";
 import { AuthError } from "next-auth";
@@ -25,31 +26,33 @@ export const SignUpCredentials = async (prevState: unknown, formData: FormData) 
   const hashedPassword = hashSync(password, 10);
 
   // Check if class exists
-  const kelas = await prisma.kelas.findUnique({ where: { id: kelasId } });
+  const db = await getDb();
+  let kelasObjId;
+  try { kelasObjId = new ObjectId(kelasId); } catch(e) {}
+  
+  const kelas = kelasObjId ? await db.collection("kelas").findOne({ _id: kelasObjId }) : await db.collection("kelas").findOne({ _id: kelasId as any });
   if (!kelas) {
     return { message: "Kelas tidak ditemukan." };
   }
 
   // Check if NIS is already taken
-  const existingNis = await prisma.siswa.findUnique({ where: { nis } });
+  const existingNis = await db.collection("siswa").findOne({ nis });
   if (existingNis) {
     return { error: { nis: ["NIS sudah terdaftar."] } };
   }
 
   try {
-    await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-        role: "User",
-        siswa: {
-          create: {
-            nis,
-            kelasId,
-          },
-        },
-      },
+    const userResult = await db.collection("users").insertOne({
+      name,
+      email,
+      password: hashedPassword,
+      role: "User",
+    });
+
+    await db.collection("siswa").insertOne({
+      nis,
+      kelasId: kelasObjId || kelasId,
+      userId: userResult.insertedId,
     });
   } catch (error) {
     return { message: "Failed to register user" };
@@ -93,8 +96,12 @@ export async function markAttendance(prevState: unknown, formData: FormData) {
     return { error: "Unauthorized" };
   }
 
-  const siswa = await prisma.siswa.findUnique({
-    where: { userId: session.user.id },
+  const db = await getDb();
+  let userObjectId;
+  try { userObjectId = new ObjectId(session.user.id); } catch(e) { userObjectId = session.user.id; }
+
+  const siswa = await db.collection("siswa").findOne({
+    $or: [{userId: userObjectId}, {userId: session.user.id}]
   });
 
   if (!siswa) {
@@ -115,13 +122,11 @@ export async function markAttendance(prevState: unknown, formData: FormData) {
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
-  const existingAttendance = await prisma.absensi.findFirst({
-    where: {
-      siswaId: siswa.id,
-      tanggal: {
-        gte: today,
-        lt: tomorrow,
-      },
+  const existingAttendance = await db.collection("absensi").findOne({
+    siswaId: siswa._id,
+    tanggal: {
+      $gte: today,
+      $lt: tomorrow,
     },
   });
 
@@ -130,14 +135,13 @@ export async function markAttendance(prevState: unknown, formData: FormData) {
   }
 
   try {
-      await prisma.absensi.create({
-        data: {
-            tanggal: new Date(),
-            status,
-            siswaId: siswa.id,
-            keterangan: keterangan || null,
-            filePath: filePath || null,
-        },
+      await db.collection("absensi").insertOne({
+          tanggal: new Date(),
+          status,
+          siswaId: siswa._id,
+          keterangan: keterangan || null,
+          filePath: filePath || null,
+          createdAt: new Date(),
       });
 
       revalidatePath("/dashboard/student");
@@ -164,27 +168,34 @@ export async function deleteUser(userId: string) {
   }
 
   try {
+    const db = await getDb();
+    let userObjId;
+    try { userObjId = new ObjectId(userId); } catch(e) { userObjId = userId; }
+
     // Delete absensi first to prevent foreign key errors
-    const siswa = await prisma.siswa.findMany({ where: { userId } });
-    for (const s of siswa) {
-       await prisma.absensi.deleteMany({ where: { siswaId: s.id }});
+    const siswaList = await db.collection("siswa").find({ 
+      $or: [{userId: userObjId}, {userId: userId}] 
+    }).toArray();
+
+    for (const s of siswaList) {
+       await db.collection("absensi").deleteMany({ siswaId: s._id });
     }
 
     // Delete siswa record
-    await prisma.siswa.deleteMany({
-      where: { userId },
+    await db.collection("siswa").deleteMany({
+      $or: [{userId: userObjId}, {userId: userId}] 
     });
 
-    await prisma.account.deleteMany({
-      where: { userId },
+    await db.collection("accounts").deleteMany({
+      $or: [{userId: userObjId}, {userId: userId}] 
     });
 
-    await prisma.session.deleteMany({
-      where: { userId },
+    await db.collection("sessions").deleteMany({
+      $or: [{userId: userObjId}, {userId: userId}] 
     });
 
-    await prisma.user.delete({
-      where: { id: userId },
+    await db.collection("users").deleteOne({
+      $or: [{_id: userObjId}, {_id: userId as any}]
     });
 
     revalidatePath("/dashboard/admin/users");
@@ -210,9 +221,14 @@ export async function updateUser(userId: string, formData: FormData) {
   }
 
   try {
-    await prisma.user.update({
-      where: { id: userId },
-      data: { name, email, role: role as any },
+    const db = await getDb();
+    let userObjId;
+    try { userObjId = new ObjectId(userId); } catch(e) { userObjId = userId; }
+
+    await db.collection("users").updateOne({
+      $or: [{_id: userObjId}, {_id: userId as any}]
+    }, {
+      $set: { name, email, role }
     });
 
     revalidatePath("/dashboard/admin/users");
@@ -235,12 +251,10 @@ export async function getAttendanceChartData() {
   sixMonthsAgo.setDate(1);
   sixMonthsAgo.setHours(0, 0, 0, 0);
 
-  const attendance = await prisma.absensi.findMany({
-    where: {
-      tanggal: { gte: sixMonthsAgo },
-    },
-    orderBy: { tanggal: "asc" },
-  });
+  const db = await getDb();
+  const attendance = await db.collection("absensi").find({
+    tanggal: { $gte: sixMonthsAgo },
+  }).sort({ tanggal: 1 }).toArray();
 
   const monthNames = [
     "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
@@ -270,10 +284,13 @@ export async function getAttendanceChartData() {
 }
 
 export async function getStreakData(siswaId: string) {
-  const absensi = await prisma.absensi.findMany({
-    where: { siswaId },
-    orderBy: { tanggal: "desc" },
-  });
+  const db = await getDb();
+  let siswaObjId;
+  try { siswaObjId = new ObjectId(siswaId); } catch(e) { siswaObjId = siswaId; }
+
+  const absensi = await db.collection("absensi").find({
+    $or: [{siswaId: siswaObjId}, {siswaId: siswaId as any}]
+  }).sort({ tanggal: -1 }).toArray();
 
   if (absensi.length === 0) {
     return { consecutivePresent: 0, consecutiveMissed: 0 };
@@ -366,15 +383,15 @@ export async function getDashboardStats() {
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
+  const db = await getDb();
+
   const [totalStudents, totalClasses, todayAttendance, totalUsers] = await Promise.all([
-    prisma.siswa.count(),
-    prisma.kelas.count(),
-    prisma.absensi.count({
-      where: {
-        tanggal: { gte: today, lt: tomorrow },
-      },
+    db.collection("siswa").countDocuments(),
+    db.collection("kelas").countDocuments(),
+    db.collection("absensi").countDocuments({
+      tanggal: { $gte: today, $lt: tomorrow },
     }),
-    prisma.user.count(),
+    db.collection("users").countDocuments(),
   ]);
 
   return {
