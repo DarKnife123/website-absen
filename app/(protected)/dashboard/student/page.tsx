@@ -21,7 +21,7 @@ export default async function StudentDashboardPage() {
     { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
     { $lookup: { from: "kelas", localField: "kelasId", foreignField: "_id", as: "kelas" } },
     { $unwind: { path: "$kelas", preserveNullAndEmptyArrays: true } },
-    { $lookup: { from: "absensi", localField: "_id", foreignField: "siswaId", pipeline: [ { $sort: { tanggal: -1 } } ], as: "absensi" } },
+    { $lookup: { from: "absensi", localField: "_id", foreignField: "siswaId", as: "absensi" } },
   ]).toArray();
 
   const siswa = siswaArr[0];
@@ -34,6 +34,11 @@ export default async function StudentDashboardPage() {
         </div>
       </div>
     )
+  }
+
+  // Sort absensi by date descending (done in JS since MongoDB 4.4 doesn't support pipeline in $lookup with localField)
+  if (siswa.absensi) {
+    siswa.absensi.sort((a: any, b: any) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime());
   }
 
   const now = new Date()
@@ -51,7 +56,7 @@ export default async function StudentDashboardPage() {
     alpha: absensiBulanIni.filter((a: any) => a.status === "alpha").length,
   }
 
-  const streak = await getStreakData(siswa.id)
+  const streak = await getStreakData(siswa._id.toString())
 
   return (
     <StudentHomeClient

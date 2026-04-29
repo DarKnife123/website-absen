@@ -15,7 +15,7 @@ export default async function StudentAttendancePage() {
 
   const siswaArr = await db.collection("siswa").aggregate([
     { $match: { $or: [{ userId: userObjId }, { userId: session.user.id as any }] } },
-    { $lookup: { from: "absensi", localField: "_id", foreignField: "siswaId", pipeline: [ { $sort: { tanggal: -1 } }, { $limit: 30 } ], as: "absensi" } },
+    { $lookup: { from: "absensi", localField: "_id", foreignField: "siswaId", as: "absensi" } },
   ]).toArray();
 
   const siswa = siswaArr[0];
@@ -30,6 +30,12 @@ export default async function StudentAttendancePage() {
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
+
+  // Sort and limit in JS since MongoDB 4.4 doesn't support pipeline in $lookup with localField
+  if (siswa.absensi) {
+    siswa.absensi.sort((a: any, b: any) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime());
+    siswa.absensi = siswa.absensi.slice(0, 30);
+  }
   const sudahAbsen = siswa.absensi.some(
     (a: any) => {
       const tanggal = new Date(a.tanggal)
