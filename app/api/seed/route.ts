@@ -3,14 +3,22 @@ import { getDb } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const db = await getDb();
     
     // Check if data already exists
+    const url = new URL(req.url);
     const existingUsers = await db.collection("users").countDocuments();
-    if (existingUsers > 0) {
-      return NextResponse.json({ message: "Database already has data. Skipping seed.", count: existingUsers });
+    if (existingUsers > 0 && url.searchParams.get("force") !== "true") {
+      return NextResponse.json({ message: "Database already has data. Skipping seed. Gunakan ?force=true jika ingin memaksa ulang.", count: existingUsers });
+    }
+
+    if (url.searchParams.get("force") === "true") {
+        await db.collection("users").deleteMany({});
+        await db.collection("kelas").deleteMany({});
+        await db.collection("siswa").deleteMany({});
+        await db.collection("absensi").deleteMany({});
     }
 
     // Seed Kelas
